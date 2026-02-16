@@ -1,11 +1,11 @@
-import os
-
 import httpx
 from fastapi import HTTPException
 
+from app.config import settings
+
 
 def ensure_api_key(env_name: str, provider_label: str) -> str:
-    api_key = os.getenv(env_name)
+    api_key = settings.get(env_name)
     if not api_key:
         raise HTTPException(status_code=400, detail=f"{provider_label} API key not found in {env_name}")
     return api_key

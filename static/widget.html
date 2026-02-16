@@ -1,15 +1,12 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BananaStore Window</title>
-    <link rel="stylesheet" href="/static/styles.css" />
-    <!-- Phosphor Icons v2.1.1 (MIT License) — https://phosphoricons.com -->
-    <link rel="stylesheet" href="/static/fonts/phosphor/style.css" />
-  </head>
-  <body style="margin:0">
-    <div class="banana-store" id="bananaStore">
+<!-- BananaStore Widget Fragment
+     1. Include styles.css + fonts/phosphor/style.css in <head>
+     2. Place this HTML inside <div class="banana-store">
+        Add data-embedded attribute to hide the titlebar and background:
+        <div class="banana-store" data-embedded>
+     3. Include app.js at end of <body>
+
+     Or call BananaStore.init(container) after the DOM is ready. -->
+
     <main class="stage">
       <section class="window-shell" id="windowShell" aria-label="Image generation window">
         <header class="window-titlebar" id="dragHandle">
@@ -245,8 +242,3 @@
         </div>
       </div>
     </section>
-    </div>
-
-    <script src="/static/app.js" defer></script>
-  </body>
-</html>

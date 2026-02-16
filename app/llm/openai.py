@@ -1,10 +1,10 @@
 import base64
-import os
 from typing import Any
 
 import httpx
 from fastapi import HTTPException
 
+from app.config import settings
 from app.costs import (
     record_openai_chat,
     record_openai_image,
@@ -145,7 +145,7 @@ async def generate_svg(
 
 
 async def suggest_filename(description: str, fallback: str) -> str:
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = settings.get("OPENAI_API_KEY")
     if not api_key:
         return fallback
 

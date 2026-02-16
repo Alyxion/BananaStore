@@ -5,7 +5,8 @@ from unittest.mock import patch, AsyncMock, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app, PROVIDER_CAPABILITIES
+from app.main import app
+from app.providers import PROVIDER_CAPABILITIES
 from tests.conftest import SAMPLE_SVG, SAMPLE_SVG_B64, SAMPLE_PNG_B64
 
 
@@ -81,7 +82,7 @@ class TestSuggestFilename:
         assert resp.json()["filename"] == "generated-image"
 
     def test_calls_openai(self):
-        with patch("app.main.llm_openai.suggest_filename", new_callable=AsyncMock, return_value="golden-cat"):
+        with patch("app.routes.llm_openai.suggest_filename", new_callable=AsyncMock, return_value="golden-cat"):
             resp = client.post("/api/suggest-filename", json={"description": "a golden cat"})
         assert resp.status_code == 200
         assert resp.json()["filename"] == "golden-cat"
@@ -91,7 +92,7 @@ class TestSuggestFilename:
 
 class TestTranscribeOpenai:
     def test_success(self):
-        with patch("app.main.llm_openai.transcribe_audio", new_callable=AsyncMock, return_value="Hello"):
+        with patch("app.routes.llm_openai.transcribe_audio", new_callable=AsyncMock, return_value="Hello"):
             resp = client.post(
                 "/api/transcribe-openai",
                 files={"audio": ("voice.webm", b"audiodata", "audio/webm")},
@@ -119,7 +120,7 @@ class TestTranscribeOpenai:
 
 class TestDescribeImage:
     def test_success(self):
-        with patch("app.main.llm_openai.describe_image", new_callable=AsyncMock, return_value="Nice cat!"):
+        with patch("app.routes.llm_openai.describe_image", new_callable=AsyncMock, return_value="Nice cat!"):
             resp = client.post("/api/describe-image", json={
                 "image_data_url": "data:image/png;base64,abc",
                 "source_text": "a cat",
@@ -141,7 +142,7 @@ class TestDescribeImage:
 
 class TestTtsOpenai:
     def test_success(self):
-        with patch("app.main.llm_openai.synthesize_speech", new_callable=AsyncMock, return_value=b"mp3data"):
+        with patch("app.routes.llm_openai.synthesize_speech", new_callable=AsyncMock, return_value=b"mp3data"):
             resp = client.post("/api/tts-openai", json={"text": "Hello world"})
         assert resp.status_code == 200
         assert resp.content == b"mp3data"
@@ -205,7 +206,7 @@ class TestGenerate:
 
     def test_openai_photo_success(self):
         data_url = f"data:image/png;base64,{SAMPLE_PNG_B64}"
-        with patch("app.main.llm_openai.generate_image", new_callable=AsyncMock, return_value=data_url):
+        with patch("app.routes.llm_openai.generate_image", new_callable=AsyncMock, return_value=data_url):
             resp = client.post("/api/generate", data={
                 "provider": "openai",
                 "description": "a sunset",
@@ -221,7 +222,7 @@ class TestGenerate:
 
     def test_openai_vector_success(self):
         data_url = f"data:image/svg+xml;base64,{SAMPLE_SVG_B64}"
-        with patch("app.main.llm_openai.generate_svg", new_callable=AsyncMock, return_value=data_url):
+        with patch("app.routes.llm_openai.generate_svg", new_callable=AsyncMock, return_value=data_url):
             resp = client.post("/api/generate", data={
                 "provider": "openai",
                 "description": "a star",
@@ -235,7 +236,7 @@ class TestGenerate:
 
     def test_google_photo_success(self):
         data_url = f"data:image/png;base64,{SAMPLE_PNG_B64}"
-        with patch("app.main.llm_google.generate_image", new_callable=AsyncMock, return_value=data_url):
+        with patch("app.routes.llm_google.generate_image", new_callable=AsyncMock, return_value=data_url):
             resp = client.post("/api/generate", data={
                 "provider": "google",
                 "description": "a mountain",
@@ -248,7 +249,7 @@ class TestGenerate:
 
     def test_anthropic_vector_success(self):
         data_url = f"data:image/svg+xml;base64,{SAMPLE_SVG_B64}"
-        with patch("app.main.llm_anthropic.generate_svg", new_callable=AsyncMock, return_value=data_url):
+        with patch("app.routes.llm_anthropic.generate_svg", new_callable=AsyncMock, return_value=data_url):
             resp = client.post("/api/generate", data={
                 "provider": "anthropic",
                 "description": "a tree",
@@ -263,7 +264,7 @@ class TestGenerate:
 
     def test_size_derived_from_ratio(self):
         data_url = f"data:image/png;base64,{SAMPLE_PNG_B64}"
-        with patch("app.main.llm_openai.generate_image", new_callable=AsyncMock, return_value=data_url) as mock_gen:
+        with patch("app.routes.llm_openai.generate_image", new_callable=AsyncMock, return_value=data_url) as mock_gen:
             client.post("/api/generate", data={
                 "provider": "openai",
                 "description": "wide shot",
@@ -276,7 +277,7 @@ class TestGenerate:
 
     def test_response_includes_all_fields(self):
         data_url = f"data:image/png;base64,{SAMPLE_PNG_B64}"
-        with patch("app.main.llm_openai.generate_image", new_callable=AsyncMock, return_value=data_url):
+        with patch("app.routes.llm_openai.generate_image", new_callable=AsyncMock, return_value=data_url):
             resp = client.post("/api/generate", data={
                 "provider": "openai",
                 "description": "test",
