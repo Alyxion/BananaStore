@@ -2,6 +2,7 @@ import httpx
 from fastapi import HTTPException
 
 from app.config import settings
+from app.llm.base import LLMProvider  # noqa: F401
 
 
 def ensure_api_key(env_name: str, provider_label: str) -> str:

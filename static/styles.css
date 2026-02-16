@@ -1609,3 +1609,58 @@
 .banana-store.embedded .window-shell {
   width: 100%; border-radius: 0; box-shadow: none; border: none;
 }
+
+.banana-store .bs-about {
+  margin-left: auto;
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: rgba(80, 40, 10, 0.4);
+  line-height: 1;
+  outline: none;
+}
+
+.banana-store .bs-about:hover,
+.banana-store .bs-about:focus { color: rgba(80, 40, 10, 0.7); }
+
+.banana-store .bs-about-tip {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  white-space: nowrap;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #3a2510;
+  background: rgba(255, 251, 242, 0.97);
+  border: 1px solid rgba(168, 115, 56, 0.22);
+  border-radius: 10px;
+  padding: 10px 16px;
+  box-shadow: 0 6px 20px rgba(81, 34, 7, 0.15);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.banana-store .bs-about-sub {
+  font-weight: 400;
+  font-size: 0.72rem;
+  color: #816649;
+  letter-spacing: 0.02em;
+}
+
+.banana-store .bs-about-legal {
+  display: block;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(168, 115, 56, 0.15);
+  font-weight: 400;
+  font-size: 0.68rem;
+  color: #9a7a56;
+  line-height: 1.5;
+}
+
+.banana-store .bs-about:hover .bs-about-tip,
+.banana-store .bs-about:focus .bs-about-tip { display: block; }

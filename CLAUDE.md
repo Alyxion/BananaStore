@@ -8,7 +8,8 @@
 ## Development & Testing
 
 - All apps bind to **port 8070**. Access exclusively via the HTTPS proxy.
-- **BananaStore**: `poetry run uvicorn app.main:app --host 0.0.0.0 --port 8070 --reload`
+- **BananaStore standalone**: `poetry run uvicorn app.standalone:app --host 0.0.0.0 --port 8070 --reload`
+- **BananaStore library** (no `GET /`): `from app.main import app` — call `enable_standalone()` only if you need the anonymous HTML endpoint
 - **NiceGUI sample**: `poetry run python samples/nicegui_host/main.py` (also port 8070). **Hot-reloads on file changes** (`.py`, `.js`, `.css`) — do not restart the process after editing.
 - **HTTPS proxy** (self-signed): `docker compose up` → `https://localhost:8453` (nginx → port 8070)
 - **Always test via HTTPS** (`https://localhost:8453`) — never open plain HTTP ports in the browser.

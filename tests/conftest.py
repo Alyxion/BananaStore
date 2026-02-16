@@ -1,16 +1,38 @@
+import asyncio
 import base64
 import io
+from contextlib import contextmanager
 from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import UploadFile
+from starlette.testclient import TestClient
 
 from app.costs import tracker
+from app.main import app, enable_standalone
+from app.session import registry
+
+# Enable GET / for tests that verify the standalone HTML endpoint
+enable_standalone()
 
 
 SAMPLE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="red"/></svg>'
 SAMPLE_SVG_B64 = base64.b64encode(SAMPLE_SVG.encode()).decode()
 SAMPLE_PNG_B64 = base64.b64encode(b"\x89PNG\r\n\x1a\nfakedata").decode()
+
+_test_client = TestClient(app)
+
+
+@contextmanager
+def ws_connect(client=None):
+    """Connect to /ws with a pre-created session token. Consumes the auth message."""
+    c = client or _test_client
+    loop = asyncio.new_event_loop()
+    token = loop.run_until_complete(registry.create_session()).token
+    loop.close()
+    with c.websocket_connect(f"/ws?token={token}") as ws:
+        ws.receive_json()  # consume auth message
+        yield ws
 
 
 @pytest.fixture(autouse=True)

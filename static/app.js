@@ -75,6 +75,99 @@ function init(root) {
 
   const GENERATION_TIMEOUT_MS = 120000;
 
+  // --- WebSocket manager ---
+  let _ws = null;
+  let _wsReady = null;
+  let _wsToken = null;
+  let _wsPending = new Map();
+  let _wsReqId = 0;
+  let _wsReconnectDelay = 500;
+  const WS_MAX_RECONNECT_DELAY = 16000;
+
+  const _getInitialToken = () => {
+    // From <meta name="bs-token"> (standalone) or sessionStorage (reconnect)
+    const stored = sessionStorage.getItem('bs-token');
+    if (stored) return stored;
+    const meta = document.querySelector('meta[name="bs-token"]');
+    return meta ? meta.getAttribute('content') : null;
+  };
+
+  const wsConnect = () => new Promise((resolve) => {
+    if (_ws && _ws.readyState === WebSocket.OPEN) { resolve(); return; }
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const token = _wsToken || _getInitialToken();
+    const url = `${proto}//${location.host}/ws${token ? `?token=${token}` : ''}`;
+    const socket = new WebSocket(url);
+
+    socket.addEventListener('open', () => {
+      _wsReconnectDelay = 500;
+    });
+
+    socket.addEventListener('message', (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === 'auth') {
+        _wsToken = msg.token;
+        sessionStorage.setItem('bs-token', msg.token);
+        resolve();
+        return;
+      }
+      const pending = _wsPending.get(msg.id);
+      if (pending) {
+        _wsPending.delete(msg.id);
+        if (msg.ok) {
+          pending.resolve(msg.result);
+        } else {
+          const err = new Error(msg.error || 'Request failed');
+          err.code = msg.code || 500;
+          if (msg.limit !== undefined) { err.limit = msg.limit; err.current = msg.current; err.attempted = msg.attempted; }
+          pending.reject(err);
+        }
+      }
+    });
+
+    socket.addEventListener('close', () => {
+      _ws = null;
+      // Reject all pending
+      for (const [, p] of _wsPending) {
+        p.reject(new Error('WebSocket closed'));
+      }
+      _wsPending.clear();
+      // Auto-reconnect with exponential backoff
+      setTimeout(() => { wsConnect(); }, _wsReconnectDelay);
+      _wsReconnectDelay = Math.min(_wsReconnectDelay * 2, WS_MAX_RECONNECT_DELAY);
+    });
+
+    socket.addEventListener('error', () => {
+      // close event will fire next and handle reconnect
+    });
+
+    _ws = socket;
+  });
+
+  const wsSend = (action, payload = {}, timeoutMs = 30000) => new Promise((resolve, reject) => {
+    const ready = () => {
+      if (!_ws || _ws.readyState !== WebSocket.OPEN) {
+        reject(new Error('WebSocket not connected'));
+        return;
+      }
+      const id = `r${++_wsReqId}`;
+      const timer = setTimeout(() => {
+        _wsPending.delete(id);
+        reject(new Error(`Request timed out after ${Math.round(timeoutMs / 1000)}s`));
+      }, timeoutMs);
+      _wsPending.set(id, {
+        resolve: (v) => { clearTimeout(timer); resolve(v); },
+        reject: (e) => { clearTimeout(timer); reject(e); },
+      });
+      _ws.send(JSON.stringify({ id, action, payload }));
+    };
+    if (_ws && _ws.readyState === WebSocket.OPEN) {
+      ready();
+    } else {
+      wsConnect().then(ready).catch(reject);
+    }
+  });
+
   const isMobileLayout = () => window.innerWidth <= 900;
 
   const switchMobileTab = (tab) => {
@@ -198,26 +291,11 @@ function init(root) {
   };
 
   const requestOpenAiNarrationAudio = async (text, language) => {
-    const response = await fetch('/api/tts-openai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, language }),
-    });
-
-    if (!response.ok) {
-      let payload = {};
-      try {
-        payload = await response.json();
-      } catch {
-        payload = {};
-      }
-      if (response.status === 404) {
-        throw new Error('TTS endpoint not found (404). Restart FastAPI.');
-      }
-      throw new Error(payload.detail || 'OpenAI TTS failed');
-    }
-
-    return response.blob();
+    const result = await wsSend('tts', { text, language });
+    const raw = atob(result.audio_b64);
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    return new Blob([bytes], { type: 'audio/mpeg' });
   };
 
   const setAiReplyPlaying = (playing) => {
@@ -328,24 +406,12 @@ function init(root) {
   };
 
   const describeGeneratedImage = async (imageDataUrl, sourceText, language = '') => {
-    const response = await fetch('/api/describe-image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image_data_url: imageDataUrl, source_text: sourceText, language }),
+    const result = await wsSend('describe-image', {
+      image_data_url: imageDataUrl,
+      source_text: sourceText,
+      language,
     });
-    let payload = {};
-    try {
-      payload = await response.json();
-    } catch {
-      payload = {};
-    }
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error('AI narration endpoint not found (404). Restart the FastAPI server.');
-      }
-      throw new Error(payload.detail || 'Description failed');
-    }
-    return (payload.description || '').trim();
+    return (result.description || '').trim();
   };
 
   const PROVIDER_LOGOS = {
@@ -735,18 +801,8 @@ function init(root) {
 
   const suggestFilename = async (description, ext = 'png') => {
     try {
-      const response = await fetch('/api/suggest-filename', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Filename API failed');
-      }
-
-      const payload = await response.json();
-      const stem = (payload.filename || 'generated-image').trim() || 'generated-image';
+      const result = await wsSend('suggest-filename', { description });
+      const stem = (result.filename || 'generated-image').trim() || 'generated-image';
       return `${stem}.${ext}`;
     } catch {
       const fallback = description
@@ -873,35 +929,32 @@ function init(root) {
     const filenamePromise = suggestFilename(description, fileExt);
 
     try {
-      const fd = new FormData();
-      fd.append('provider', getActiveProvider());
-      fd.append('description', description);
-      fd.append('quality', getActivePill(qualityPills));
-      fd.append('ratio', getActivePill(ratioPills));
-      fd.append('format', activeFormat);
-      referenceItems.forEach((item) => fd.append('reference_images', item.file));
+      // Convert reference File objects to base64 for WebSocket
+      const wsRefs = await Promise.all(referenceItems.map(async (item) => {
+        const dataUrl = await fileToDataUrl(item.file);
+        const commaIdx = dataUrl.indexOf(',');
+        return {
+          name: item.file.name,
+          data_b64: dataUrl.substring(commaIdx + 1),
+          content_type: item.file.type || 'image/png',
+        };
+      }));
 
-      const controller = generationAbortController;
-      const timeoutId = window.setTimeout(() => controller.abort(), GENERATION_TIMEOUT_MS);
-      let response;
+      let data;
       try {
-        response = await fetch('/api/generate', {
-          method: 'POST',
-          body: fd,
-          signal: controller.signal,
-        });
+        data = await wsSend('generate', {
+          provider: getActiveProvider(),
+          description,
+          quality: getActivePill(qualityPills),
+          ratio: getActivePill(ratioPills),
+          format: activeFormat,
+          reference_images: wsRefs,
+        }, GENERATION_TIMEOUT_MS);
       } catch (error) {
-        if (error.name === 'AbortError') {
+        if (generationAbortController && generationAbortController.signal.aborted) {
           throw new Error('Generation cancelled.');
         }
         throw error;
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || 'Generation failed');
       }
 
       generatedFormat = data.format || 'Photo';
@@ -1420,25 +1473,20 @@ function init(root) {
     voicePopupNote.textContent = `Transcribing ${recordedSeconds || '?'}s audio...`;
 
     try {
-      const file = new File([openAiBlob], 'voice.webm', { type: openAiBlob.type || 'audio/webm' });
-      const formData = new FormData();
-      formData.append('audio', file);
+      // Convert blob to base64
+      const arrayBuf = await openAiBlob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuf);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const audioB64 = btoa(binary);
 
-      openAiTranscribeAbortController = new AbortController();
+      const result = await wsSend('transcribe', {
+        audio_b64: audioB64,
+        filename: 'voice.webm',
+        content_type: openAiBlob.type || 'audio/webm',
+      }, 60000);
 
-      const response = await fetch('/api/transcribe-openai', {
-        method: 'POST',
-        body: formData,
-        signal: openAiTranscribeAbortController.signal,
-      });
-      openAiTranscribeAbortController = null;
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.detail || 'Transcription failed');
-      }
-
-      const text = (payload.text || '').trim();
+      const text = (result.text || '').trim();
       if (!text) {
         throw new Error('No transcript returned');
       }
@@ -1449,10 +1497,6 @@ function init(root) {
       setStatus('Voice transcript added.');
       closeOpenAiVoicePopup();
     } catch (error) {
-      if (error.name === 'AbortError') {
-        return;
-      }
-      openAiTranscribeAbortController = null;
       voicePopupNote.textContent = error.message || 'Transcription failed.';
     }
   };
@@ -1608,13 +1652,8 @@ function init(root) {
   };
 
   const loadProviders = async () => {
-    const response = await fetch('/api/providers');
-    if (!response.ok) {
-      throw new Error('Failed to load providers');
-    }
-
-    const payload = await response.json();
-    providers = payload.providers || {};
+    const result = await wsSend('providers');
+    providers = result.providers || {};
 
     providerGroup.innerHTML = '';
     let first = true;
@@ -1658,6 +1697,7 @@ function init(root) {
   const start = async () => {
     try {
       setAiNarrationEnabled(true);
+      await wsConnect();
       await loadProviders();
       makeWindowDraggable();
       renderReferenceGallery();
