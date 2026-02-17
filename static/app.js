@@ -5,6 +5,21 @@ function init(root) {
   if (root._bsInit) return;
   root._bsInit = true;
 
+  // --- i18n helper — uses global BsI18n if loaded, otherwise returns key ---
+  const t = (key, params) => window.bsI18n ? window.bsI18n.t(key, params) : key;
+
+  const applyI18n = (scope) => {
+    if (!window.bsI18n) return;
+    for (const el of scope.querySelectorAll('[data-i18n]'))
+      el.textContent = t(el.dataset.i18n);
+    for (const el of scope.querySelectorAll('[data-i18n-placeholder]'))
+      el.placeholder = t(el.dataset.i18nPlaceholder);
+    for (const el of scope.querySelectorAll('[data-i18n-title]'))
+      el.title = t(el.dataset.i18nTitle);
+    for (const el of scope.querySelectorAll('[data-i18n-aria]'))
+      el.setAttribute('aria-label', t(el.dataset.i18nAria));
+  };
+
   // Embedded mode: add class via ?embed URL param OR data-embedded attribute
   if (new URLSearchParams(window.location.search).has('embed') || root.hasAttribute('data-embedded')) {
     root.classList.add('embedded');
@@ -85,11 +100,10 @@ function init(root) {
   const WS_MAX_RECONNECT_DELAY = 16000;
 
   const _getInitialToken = () => {
-    // From <meta name="bs-token"> (standalone) or sessionStorage (reconnect)
-    const stored = sessionStorage.getItem('bs-token');
-    if (stored) return stored;
+    // Prefer meta tag (always fresh from server) over sessionStorage (may be stale)
     const meta = document.querySelector('meta[name="bs-token"]');
-    return meta ? meta.getAttribute('content') : null;
+    if (meta && meta.content) return meta.content;
+    return sessionStorage.getItem('bs-token');
   };
 
   const wsConnect = () => new Promise((resolve) => {
@@ -897,7 +911,7 @@ function init(root) {
 
     const description = descriptionInput.value.trim();
     if (!description) {
-      setStatus('Description is required.');
+      setStatus(t('bs.status_description_required'));
       return;
     }
 
@@ -911,20 +925,14 @@ function init(root) {
     const activeFormat = getActivePill(formatPills) || 'Photo';
     setGenerating(true);
     const loaderText = progressOverlay.querySelector('.loader-text');
-    const loaderMessages = [
-      'Peeling your idea\u2026',
-      'Going bananas\u2026',
-      'Ripening the details\u2026',
-      'Harvesting fresh pixels\u2026',
-      'Getting to the core of it\u2026',
-      'Polishing the peel\u2026',
-      'Picking the best of the bunch\u2026',
-      'Adding the perfect peel-lighting\u2026',
-      'Fresh from the bunch\u2026',
-      'Making it extra a-peel-ing\u2026',
-    ];
+    const loaderMessages = [];
+    for (let i = 1; i <= 10; i++) {
+      const msg = t(`bs.loader_${i}`);
+      if (msg !== `bs.loader_${i}`) loaderMessages.push(msg);
+    }
+    if (!loaderMessages.length) loaderMessages.push(t('bs.status_generating'));
     if (loaderText) loaderText.textContent = loaderMessages[Math.floor(Math.random() * loaderMessages.length)];
-    setStatus('Generating...');
+    setStatus(t('bs.status_generating'));
     const fileExt = activeFormat === 'Vector' ? 'svg' : 'png';
     const filenamePromise = suggestFilename(description, fileExt);
 
@@ -1000,14 +1008,14 @@ function init(root) {
           await speakTextInLanguage(reply, language);
         }
       } catch (describeError) {
-        narrationErrorMessage = describeError.message || 'AI narration unavailable.';
+        narrationErrorMessage = describeError.message || t('bs.narration_unavailable');
         console.warn('Describe image failed:', describeError);
       }
 
-      const baseDoneStatus = `Done — ${data.provider}, ${data.used_reference_images} ref(s) used.`;
+      const baseDoneStatus = t('bs.status_done', { provider: data.provider, refs: String(data.used_reference_images) });
       setStatus(narrationErrorMessage ? `${baseDoneStatus} ${narrationErrorMessage}` : baseDoneStatus);
     } catch (error) {
-      setStatus(error.message || 'Generation failed');
+      setStatus(error.message || t('bs.status_generation_failed'));
     } finally {
       setGenerating(false);
     }
@@ -1040,7 +1048,7 @@ function init(root) {
     }
     const replayText = (lastAiReplyText || aiReply.textContent || '').trim();
     if (!replayText) {
-      setStatus('No AI summary available to replay yet.');
+      setStatus(t('bs.status_no_summary'));
       return;
     }
     const replayLanguage = lastAiReplyLanguage || inferSpeechLanguageFromText(replayText);
@@ -1055,7 +1063,7 @@ function init(root) {
       })
       .catch((error) => {
         setAiReplyPlaying(false);
-        setStatus(error.message || 'Replay failed.');
+        setStatus(error.message || t('bs.status_replay_failed'));
       });
   });
 
@@ -1087,7 +1095,7 @@ function init(root) {
       link.download = filename.replace(/\.\w+$/, '.png');
       link.click();
     } catch (err) {
-      setStatus(`PNG conversion failed: ${err.message}`);
+      setStatus(t('bs.status_png_failed', { error: err.message }));
     }
   };
 
@@ -1130,7 +1138,7 @@ function init(root) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
     } catch (err) {
-      setStatus(`Camera access denied: ${err.message}`);
+      setStatus(t('bs.status_camera_denied', { error: err.message }));
       return;
     }
 
@@ -1140,7 +1148,7 @@ function init(root) {
     video.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:50;background:#000;';
 
     const shutterBtn = document.createElement('button');
-    shutterBtn.textContent = 'Capture';
+    shutterBtn.textContent = t('bs.btn_capture');
     shutterBtn.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:51;padding:14px 36px;border-radius:50px;background:#fff;color:#222;font-size:1.1rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
 
     const cancelBtn = document.createElement('button');
@@ -1174,7 +1182,7 @@ function init(root) {
           const file = new File([blob], fileName, { type: 'image/png' });
           addReferenceFiles([file], true);
           addRecentImage(captureDataUrl, fileName);
-          setStatus('Photo captured and added to references.');
+          setStatus(t('bs.status_photo_captured'));
         }
       }, 'image/png');
     });
@@ -1327,9 +1335,9 @@ function init(root) {
     openAiBlob = null;
     openAiRecordingStartedAt = 0;
     openAiLastVoiceAt = 0;
-    voicePopupNote.textContent = 'Listening...';
+    voicePopupNote.textContent = t('bs.voice_listening');
     voiceButton.classList.remove('recording');
-    voiceButton.title = 'Talk me through your image idea';
+    voiceButton.title = t('bs.voice_btn_title');
     voicePopup.hidden = true;
   };
 
@@ -1344,14 +1352,14 @@ function init(root) {
     if (!openAiRecorder || openAiRecorder.state === 'inactive') {
       return;
     }
-    voicePopupNote.textContent = 'Sending...';
+    voicePopupNote.textContent = t('bs.voice_sending');
     openAiRecorder.requestData();
     stopOpenAiRecording();
   };
 
   const startOpenAiRecording = async () => {
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      voicePopupNote.textContent = 'This browser does not support microphone recording.';
+      voicePopupNote.textContent = t('bs.voice_no_support');
       return;
     }
 
@@ -1362,7 +1370,7 @@ function init(root) {
     try {
       openAiStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (error) {
-      voicePopupNote.textContent = `Microphone access failed: ${error.message}`;
+      voicePopupNote.textContent = t('bs.voice_mic_failed', { error: error.message });
       return;
     }
 
@@ -1398,7 +1406,7 @@ function init(root) {
         openAiBlob = new Blob(openAiChunks, { type: openAiRecorder?.mimeType || 'audio/webm' });
         sendOpenAiRecording(recordedSeconds);
       } else {
-        voicePopupNote.textContent = 'No audio captured. Try again.';
+        voicePopupNote.textContent = t('bs.voice_no_audio');
       }
       openAiRecorder = null;
     });
@@ -1407,8 +1415,8 @@ function init(root) {
     openAiRecordingStartedAt = Date.now();
     openAiLastVoiceAt = openAiRecordingStartedAt;
     voiceButton.classList.add('recording');
-    voiceButton.title = 'Listening...';
-    voicePopupNote.textContent = 'Listening...';
+    voiceButton.title = t('bs.voice_btn_title_listening');
+    voicePopupNote.textContent = t('bs.voice_listening');
 
     const renderFrame = () => {
       if (!openAiAnalyser) {
@@ -1433,9 +1441,9 @@ function init(root) {
     openAiElapsedTimerId = setInterval(() => {
       const elapsed = Math.floor((Date.now() - openAiRecordingStartedAt) / 1000);
       const silenceSecs = Math.max(0, OPENAI_VOICE_SILENCE_MS - (Date.now() - openAiLastVoiceAt)) / 1000;
-      voicePopupNote.textContent = `Listening ${formatVoiceTime(elapsed)} • auto-send in ${silenceSecs.toFixed(1)}s silence`;
+      voicePopupNote.textContent = t('bs.voice_listening_timer', { elapsed: formatVoiceTime(elapsed), silence: silenceSecs.toFixed(1) });
       if (elapsed >= OPENAI_VOICE_MAX_SECONDS) {
-        voicePopupNote.textContent = 'Reached safety max length, stopping.';
+        voicePopupNote.textContent = t('bs.voice_max_length');
         stopOpenAiRecording();
       }
     }, 1000);
@@ -1459,7 +1467,7 @@ function init(root) {
       const silenceDuration = now - openAiLastVoiceAt;
       const elapsed = now - openAiRecordingStartedAt;
       if (elapsed > 1200 && silenceDuration >= OPENAI_VOICE_SILENCE_MS) {
-        voicePopupNote.textContent = 'Silence detected. Sending...';
+        voicePopupNote.textContent = t('bs.voice_silence');
         stopOpenAiRecording();
       }
     }, 180);
@@ -1470,7 +1478,7 @@ function init(root) {
       return;
     }
 
-    voicePopupNote.textContent = `Transcribing ${recordedSeconds || '?'}s audio...`;
+    voicePopupNote.textContent = t('bs.voice_transcribing', { seconds: String(recordedSeconds || '?') });
 
     try {
       // Convert blob to base64
@@ -1494,10 +1502,10 @@ function init(root) {
       const base = descriptionInput.value.trim();
       descriptionInput.value = base ? `${base} ${text}` : text;
       updateClearButton();
-      setStatus('Voice transcript added.');
+      setStatus(t('bs.status_voice_added'));
       closeOpenAiVoicePopup();
     } catch (error) {
-      voicePopupNote.textContent = error.message || 'Transcription failed.';
+      voicePopupNote.textContent = error.message || t('bs.transcription_failed');
     }
   };
 
@@ -1516,7 +1524,7 @@ function init(root) {
   voiceButton.addEventListener('click', () => {
     voiceButton.classList.remove('recording');
     voicePopup.hidden = false;
-    voicePopupNote.textContent = 'Listening...';
+    voicePopupNote.textContent = t('bs.voice_listening');
     startOpenAiRecording();
   });
   voiceCancelButton.addEventListener('click', closeOpenAiVoicePopup);
@@ -1696,15 +1704,17 @@ function init(root) {
 
   const start = async () => {
     try {
+      if (window.bsI18n) await window.bsI18n.ready;
+      applyI18n(root);
       setAiNarrationEnabled(true);
       await wsConnect();
       await loadProviders();
       makeWindowDraggable();
       renderReferenceGallery();
       try { await initRecentDB(); renderRecentGallery(); } catch (e) { console.warn('Recent images DB unavailable:', e); }
-      setStatus('Ready. Upload references or generate directly.');
+      setStatus(t('bs.status_ready'));
     } catch (error) {
-      setStatus(error.message || 'Could not initialize app');
+      setStatus(error.message || t('bs.status_init_failed'));
     }
   };
 

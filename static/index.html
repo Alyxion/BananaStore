@@ -35,36 +35,36 @@
               <path d="M17 9c-1 3-3.5 7-7 10" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1" stroke-linecap="round"/>
             </g>
           </svg>
-          <h1>BananaStore <span class="titlebar-tagline">— Where Ideas Go Bananas</span></h1>
-          <span class="bs-about" tabindex="0" role="button" aria-label="About"><i class="ph ph-info"></i><span class="bs-about-tip"><strong>BananaStore</strong><br><span class="bs-about-sub">Where Ideas Go Bananas</span><br><span class="bs-about-legal">&copy; 2026 Michael Ikemann<br>MIT License</span></span></span>
+          <h1><span data-i18n="bs.titlebar_name">BananaStore</span> <span class="titlebar-tagline">— <span data-i18n="bs.titlebar_tagline">Where Ideas Go Bananas</span></span></h1>
+          <span class="bs-about" tabindex="0" role="button" data-i18n-aria="bs.about_label" aria-label="About"><i class="ph ph-info"></i><span class="bs-about-tip"><strong data-i18n="bs.titlebar_name">BananaStore</strong><br><span class="bs-about-sub" data-i18n="bs.titlebar_tagline">Where Ideas Go Bananas</span><br><span class="bs-about-legal">&copy; 2026 Michael Ikemann</span></span></span>
         </header>
 
         <div class="window-body">
           <nav class="mobile-tabs" id="mobileTabs">
-            <button type="button" class="mobile-tab active" data-tab="create"><i class="ph ph-paint-brush-broad"></i> Create</button>
-            <button type="button" class="mobile-tab" data-tab="result"><i class="ph ph-image"></i> Result</button>
+            <button type="button" class="mobile-tab active" data-tab="create"><i class="ph ph-paint-brush-broad"></i> <span data-i18n="bs.tab_create">Create</span></button>
+            <button type="button" class="mobile-tab" data-tab="result"><i class="ph ph-image"></i> <span data-i18n="bs.tab_result">Result</span></button>
           </nav>
           <div class="layout-grid" data-active-tab="create">
             <form id="generatorForm" class="panel controls">
-              <h2><i class="ph ph-paint-brush-broad"></i> Create</h2>
+              <h2><i class="ph ph-paint-brush-broad"></i> <span data-i18n="bs.heading_create">Create</span></h2>
 
               <div class="field-group">
-                <span class="field-label">Provider</span>
+                <span class="field-label" data-i18n="bs.label_provider">Provider</span>
                 <div class="provider-group" id="providerGroup"></div>
               </div>
 
               <div class="option-row">
                 <div class="option-row-inline">
                   <div class="option-group">
-                    <span class="field-label"><i class="ph ph-star"></i> Quality</span>
+                    <span class="field-label"><i class="ph ph-star"></i> <span data-i18n="bs.label_quality">Quality</span></span>
                     <div class="option-pills" id="qualityPills"></div>
                   </div>
                   <div class="option-group">
-                    <span class="field-label"><i class="ph ph-frame-corners"></i> Ratio</span>
+                    <span class="field-label"><i class="ph ph-frame-corners"></i> <span data-i18n="bs.label_ratio">Ratio</span></span>
                     <div class="option-pills" id="ratioPills"></div>
                   </div>
                   <div class="option-group" id="formatGroup" hidden>
-                    <span class="field-label"><i class="ph ph-file-image"></i> Format</span>
+                    <span class="field-label"><i class="ph ph-file-image"></i> <span data-i18n="bs.label_format">Format</span></span>
                     <div class="option-pills" id="formatPills"></div>
                   </div>
                 </div>
@@ -73,16 +73,16 @@
               <hr class="section-divider" />
 
               <label class="description-label">
-                <span class="field-label"><i class="ph ph-chat-text"></i> Description</span>
+                <span class="field-label"><i class="ph ph-chat-text"></i> <span data-i18n="bs.label_description">Description</span></span>
                 <div class="description-wrap">
-                  <textarea id="description" name="description" rows="6" placeholder="Describe what to generate"></textarea>
+                  <textarea id="description" name="description" rows="6" data-i18n-placeholder="bs.placeholder_description" placeholder="Describe what to generate"></textarea>
                   <div class="clear-desc-wrap">
-                    <button type="button" id="clearDescriptionButton" class="input-icon-btn clear-desc-btn" title="Clear description" hidden>
+                    <button type="button" id="clearDescriptionButton" class="input-icon-btn clear-desc-btn" data-i18n-title="bs.clear_description_title" title="Clear description" hidden>
                       <i class="ph ph-x" style="font-size:14px"></i>
                     </button>
                   </div>
                   <div class="voice-btn-stack">
-                    <button type="button" id="voiceButton" class="input-icon-btn" title="Talk me through your image idea">
+                    <button type="button" id="voiceButton" class="input-icon-btn" data-i18n-title="bs.voice_btn_title" title="Talk me through your image idea">
                       <i class="ph ph-microphone" style="font-size:18px"></i>
                     </button>
                   </div>
@@ -92,16 +92,16 @@
               <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
 
               <div class="primary-actions">
-                <button type="submit" id="generateButton" class="generate-btn"><i class="ph ph-sparkle"></i> Generate</button>
-                <button type="button" id="aiNarrationToggle" class="secondary speaker-toggle" aria-pressed="true" title="AI voice on">
+                <button type="submit" id="generateButton" class="generate-btn"><i class="ph ph-sparkle"></i> <span data-i18n="bs.btn_generate">Generate</span></button>
+                <button type="button" id="aiNarrationToggle" class="secondary speaker-toggle" aria-pressed="true" data-i18n-title="bs.ai_voice_on_title" title="AI voice on">
                   <i class="ph ph-speaker-high" style="font-size:17px" aria-hidden="true"></i>
                 </button>
               </div>
-              <p id="status" class="status">Ready.</p>
+              <p id="status" class="status" data-i18n="bs.status_ready">Ready.</p>
             </form>
 
             <section class="panel output">
-              <h2><i class="ph ph-image"></i> Generated</h2>
+              <h2><i class="ph ph-image"></i> <span data-i18n="bs.heading_generated">Generated</span></h2>
               <div class="preview" id="previewWrap">
                 <div class="progress-overlay" id="progressOverlay" hidden>
                   <svg class="banana-loader" viewBox="0 0 200 200" aria-hidden="true">
@@ -143,40 +143,40 @@
                     <circle class="loader-dot d3" cx="100" cy="160" r="3" fill="#ffb74d" opacity="0.8"/>
                     <circle class="loader-dot d4" cx="40" cy="100" r="3" fill="#ffb74d" opacity="0.8"/>
                   </svg>
-                  <p class="loader-text">Generating image...</p>
-                  <button type="button" id="cancelButton" class="cancel-btn"><i class="ph ph-x"></i> Cancel</button>
+                  <p class="loader-text" data-i18n="bs.status_generating">Generating image...</p>
+                  <button type="button" id="cancelButton" class="cancel-btn"><i class="ph ph-x"></i> <span data-i18n="bs.btn_cancel">Cancel</span></button>
                 </div>
-                <button type="button" id="fullSizeButton" class="preview-action-btn full-size-btn" title="View 100%" hidden>
+                <button type="button" id="fullSizeButton" class="preview-action-btn full-size-btn" data-i18n-title="bs.view_full_size_title" title="View 100%" hidden>
                   <i class="ph ph-arrows-out" style="font-size:16px"></i>
                 </button>
                 <img id="previewImage" alt="Generated preview" hidden />
-                <p id="emptyPreview">Your generated image will appear here.</p>
+                <p id="emptyPreview" data-i18n="bs.empty_preview">Your generated image will appear here.</p>
               </div>
               <div class="preview-bar" id="previewBar" hidden>
                 <p id="imageHint" class="image-hint" title=""></p>
                 <button type="button" id="downloadButton" class="download-btn">
-                  <i class="ph ph-download-simple"></i> Download
+                  <i class="ph ph-download-simple"></i> <span data-i18n="bs.btn_download">Download</span>
                 </button>
               </div>
               <div class="ai-reply-row" id="aiReplyRow" hidden>
                 <p id="aiReply" class="ai-reply"></p>
-                <button type="button" id="aiReplySpeakButton" class="secondary ai-reply-speak" title="Play summary">
+                <button type="button" id="aiReplySpeakButton" class="secondary ai-reply-speak" data-i18n-title="bs.play_summary_title" title="Play summary">
                   <i class="ph ph-speaker-high" style="font-size:15px" aria-hidden="true"></i>
                 </button>
               </div>
 
               <div class="reference-toolbar">
-                <h3><i class="ph ph-images"></i> References <span id="referenceMeta" class="ref-count"></span></h3>
+                <h3><i class="ph ph-images"></i> <span data-i18n="bs.heading_references">References</span> <span id="referenceMeta" class="ref-count"></span></h3>
                 <div class="reference-actions">
-                  <button type="button" id="recentButton" class="ref-action-link" hidden><i class="ph ph-clock-counter-clockwise"></i> Recent</button>
-                  <button type="button" id="clearRefsButton" class="ref-action-link" hidden><i class="ph ph-trash"></i> Clear all</button>
+                  <button type="button" id="recentButton" class="ref-action-link" hidden><i class="ph ph-clock-counter-clockwise"></i> <span data-i18n="bs.btn_recent">Recent</span></button>
+                  <button type="button" id="clearRefsButton" class="ref-action-link" hidden><i class="ph ph-trash"></i> <span data-i18n="bs.btn_clear_all">Clear all</span></button>
                 </div>
               </div>
               <div id="referenceGallery" class="gallery" aria-live="polite"></div>
 
               <div class="recent-popup" id="recentPopup" hidden>
                 <div class="recent-popup-header">
-                  <span><i class="ph ph-clock-counter-clockwise"></i> Recent</span>
+                  <span><i class="ph ph-clock-counter-clockwise"></i> <span data-i18n="bs.btn_recent">Recent</span></span>
                   <button type="button" id="recentCloseButton" class="recent-popup-close">&times;</button>
                 </div>
                 <div id="recentGallery" class="gallery"></div>
@@ -189,13 +189,13 @@
 
     <section class="lightbox" id="lightbox" hidden>
       <div class="lightbox-bar">
-        <p id="lightboxTitle">Image viewer</p>
+        <p id="lightboxTitle" data-i18n="bs.lightbox_title">Image viewer</p>
         <div class="lightbox-actions">
           <button type="button" id="zoomOutButton" class="secondary"><i class="ph ph-minus"></i></button>
           <button type="button" id="zoomResetButton" class="secondary">100%</button>
           <button type="button" id="zoomInButton" class="secondary"><i class="ph ph-plus"></i></button>
           <button type="button" id="lightboxDownloadButton" class="secondary">
-            <i class="ph ph-download-simple"></i> Save
+            <i class="ph ph-download-simple"></i> <span data-i18n="bs.btn_save">Save</span>
           </button>
           <button type="button" id="lightboxPrevButton" class="secondary"><i class="ph ph-caret-left"></i></button>
           <button type="button" id="lightboxNextButton" class="secondary"><i class="ph ph-caret-right"></i></button>
@@ -209,8 +209,8 @@
 
     <section class="voice-popup" id="voicePopup" hidden>
       <div class="voice-popup-card">
-        <h3><i class="ph ph-microphone"></i> Talk me through your image</h3>
-        <p class="voice-popup-meta">Describe your idea naturally. We auto-send after a short silence, or you can send immediately.</p>
+        <h3><i class="ph ph-microphone"></i> <span data-i18n="bs.voice_title">Talk me through your image</span></h3>
+        <p class="voice-popup-meta" data-i18n="bs.voice_meta">Describe your idea naturally. We auto-send after a short silence, or you can send immediately.</p>
         <div class="voice-live-strip">
           <canvas id="voiceWaveCanvas" width="640" height="56" aria-hidden="true"></canvas>
         </div>
@@ -218,10 +218,10 @@
           <canvas id="voiceBandsCanvas" width="320" height="42" aria-hidden="true"></canvas>
           <canvas id="voiceLoudnessCanvas" width="320" height="42" aria-hidden="true"></canvas>
         </div>
-        <p class="voice-popup-note" id="voicePopupNote">Listening...</p>
+        <p class="voice-popup-note" id="voicePopupNote" data-i18n="bs.voice_listening">Listening...</p>
         <div class="voice-popup-actions">
-          <button type="button" id="voiceSendButton" class="secondary"><i class="ph ph-paper-plane-tilt"></i> Send now</button>
-          <button type="button" id="voiceCancelButton" class="danger"><i class="ph ph-x"></i> Cancel</button>
+          <button type="button" id="voiceSendButton" class="secondary"><i class="ph ph-paper-plane-tilt"></i> <span data-i18n="bs.btn_send_now">Send now</span></button>
+          <button type="button" id="voiceCancelButton" class="danger"><i class="ph ph-x"></i> <span data-i18n="bs.btn_cancel">Cancel</span></button>
         </div>
       </div>
     </section>
@@ -229,25 +229,26 @@
     <section class="download-format-popup" id="downloadFormatPopup" hidden>
       <div class="download-format-card">
         <div class="download-format-header">
-          <h3>Download Format</h3>
+          <h3 data-i18n="bs.download_format_title">Download Format</h3>
           <button type="button" id="downloadFormatCloseButton" class="download-format-close">&times;</button>
         </div>
         <div class="download-format-options">
           <button type="button" id="downloadSvgButton" class="download-format-btn">
             <i class="ph ph-file-svg"></i>
-            <span class="download-format-btn-label">SVG</span>
-            <span class="download-format-btn-hint">Scalable, editable</span>
+            <span class="download-format-btn-label" data-i18n="bs.download_svg_label">SVG</span>
+            <span class="download-format-btn-hint" data-i18n="bs.download_svg_hint">Scalable, editable</span>
           </button>
           <button type="button" id="downloadPngButton" class="download-format-btn">
             <i class="ph ph-file-png"></i>
-            <span class="download-format-btn-label">PNG</span>
-            <span class="download-format-btn-hint">Raster, universal</span>
+            <span class="download-format-btn-label" data-i18n="bs.download_png_label">PNG</span>
+            <span class="download-format-btn-hint" data-i18n="bs.download_png_hint">Raster, universal</span>
           </button>
         </div>
       </div>
     </section>
     </div>
 
+    <script src="/static/i18n.js"></script>
     <script src="/static/app.js" defer></script>
   </body>
 </html>

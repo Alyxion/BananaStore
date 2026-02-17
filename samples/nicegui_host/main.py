@@ -43,6 +43,8 @@ app.mount('/static', StaticFiles(directory=str(PROJ_ROOT / 'static')), name='ban
 from app.ws import ws_endpoint  # noqa: E402
 from app.session import registry  # noqa: E402
 from app.costs import tracker as cost_tracker  # noqa: E402
+from app.i18n import I18n  # noqa: E402
+from app.components import BananaStoreWidget  # noqa: E402
 
 app.add_api_websocket_route('/ws', ws_endpoint)
 
@@ -55,111 +57,78 @@ async def _start_cleanup():
 async def _stop_cleanup():
     registry.stop_cleanup()
 
-# Load widget HTML fragment once at startup
-WIDGET_HTML = (PROJ_ROOT / 'static' / 'widget.html').read_text()
-
 # -- Budget defaults ----------------------------------------------------------
 
 DEFAULT_BUDGET_USD = 5.00
 cost_tracker.limit_usd = DEFAULT_BUDGET_USD
 
-CATEGORY_META: dict[str, tuple[str, str]] = {
-    'image_generation': ('ph ph-image', 'Images'),
-    'prompt':           ('ph ph-chat-text', 'Summaries'),
-    'voice_input':      ('ph ph-microphone', 'Speech to Text'),
-    'voice_output':     ('ph ph-speaker-high', 'Text to Speech'),
-    'image_input':      ('ph ph-eye', 'Image Analysis'),
+# i18n — set BS_LANG / BS_LANG_FALLBACK env vars, or pass overrides=
+BS_LANG = os.getenv('BS_LANG', 'en')
+BS_FALLBACK = os.getenv('BS_LANG_FALLBACK', 'en')
+t = I18n(lang=BS_LANG, fallback=BS_FALLBACK)
+
+CATEGORY_ICONS: dict[str, str] = {
+    'image_generation': 'ph ph-image',
+    'prompt':           'ph ph-chat-text',
+    'voice_input':      'ph ph-microphone',
+    'voice_output':     'ph ph-speaker-high',
+    'image_input':      'ph ph-eye',
 }
+
+CATEGORY_I18N: dict[str, str] = {
+    'image_generation': 'bs.cat_images',
+    'prompt':           'bs.cat_summaries',
+    'voice_input':      'bs.cat_stt',
+    'voice_output':     'bs.cat_tts',
+    'image_input':      'bs.cat_image_analysis',
+}
+
+# -- Reusable inline styles ---------------------------------------------------
+
+CARD_STYLE = (
+    'background: rgba(255, 249, 236, 0.74);'
+    'backdrop-filter: blur(10px);'
+    'border: 1px solid rgba(168, 115, 56, 0.32);'
+    'border-radius: 16px;'
+    'padding: 24px;'
+    'box-shadow: 0 8px 28px rgba(81, 34, 7, 0.14);'
+)
+
+STORE_PANEL_STYLE = (
+    'position: fixed; top: 60px; left: 0; right: 0;'
+    'width: min(1220px, calc(100vw - 48px)); height: calc(100vh - 84px);'
+    'margin: 0 auto; border-radius: 16px; z-index: 6000;'
+)
+
+CATEGORY_ROW_STYLE = (
+    'display: flex; justify-content: space-between; align-items: center;'
+    'padding: 8px 0; border-bottom: 1px solid rgba(168, 115, 56, 0.12);'
+    'font-size: 14px; color: #816649;'
+)
+
+CHARGE_ENTRY_STYLE = (
+    'padding: 6px 0; border-bottom: 1px solid rgba(168, 115, 56, 0.10);'
+    'font-size: 13px; color: #816649;'
+)
+
+PROGRESS_TRACK_STYLE = (
+    'width: 100%; height: 8px;'
+    'background: rgba(168, 115, 56, 0.15);'
+    'border-radius: 4px; overflow: hidden; margin-top: 12px;'
+)
+
+PROGRESS_FILL_STYLE = (
+    'height: 100%; border-radius: 4px;'
+    'transition: width 0.6s ease, background-color 0.6s ease;'
+)
 
 
 # -- Dashboard page ------------------------------------------------------------
 
 @ui.page('/')
 async def dashboard():
-    # Create a session and get token for this page load
     session = await registry.create_session()
     token = session.token
-
-    # BananaStore CSS + Phosphor Icons
-    ui.add_head_html(
-        '<link rel="stylesheet" href="/static/styles.css">'
-        '<link rel="stylesheet" href="/static/fonts/phosphor/style.css">'
-    )
-
-    # Inject the token as a meta tag
-    ui.add_head_html(f'<meta name="bs-token" content="{token}">')
-
-    ui.add_head_html('''
-    <style>
-      .banana-card {
-        background: rgba(255, 249, 236, 0.74);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(168, 115, 56, 0.32);
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 8px 28px rgba(81, 34, 7, 0.14);
-      }
-
-      /* Keep dashboard content from flowing behind the store panel */
-      .dashboard-content {
-        max-width: calc((100vw - min(1220px, calc(100vw - 48px))) / 2 - 16px);
-        min-width: 280px;
-      }
-      @media (max-width: 900px) {
-        .dashboard-content { display: none; }
-      }
-
-      /* BananaStore floating panel — centered */
-      .store-panel {
-        position: fixed;
-        top: 60px;
-        left: 0;
-        right: 0;
-        width: min(1220px, calc(100vw - 48px));
-        height: calc(100vh - 84px);
-        margin: 0 auto;
-        border-radius: 16px;
-        z-index: 6000;
-      }
-
-      /* Mobile: fullscreen, dock to 0,0, above NiceGUI header */
-      @media (max-width: 900px) {
-        .store-panel {
-          top: 0; left: 0; right: 0; bottom: 0;
-          width: 100%; height: 100%;
-          border-radius: 0; margin: 0;
-          z-index: 6000;
-        }
-      }
-
-      /* Budget panel */
-      .budget-progress-track {
-        width: 100%; height: 8px;
-        background: rgba(168, 115, 56, 0.15);
-        border-radius: 4px;
-        overflow: hidden;
-        margin-top: 12px;
-      }
-      .budget-progress-fill {
-        height: 100%; border-radius: 4px;
-        transition: width 0.6s ease, background-color 0.6s ease;
-      }
-      .category-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid rgba(168, 115, 56, 0.12);
-        font-size: 14px; color: #816649;
-      }
-      .category-row:last-child { border-bottom: none; }
-      .category-icon { margin-right: 8px; font-size: 16px; }
-      .charge-entry {
-        padding: 6px 0;
-        border-bottom: 1px solid rgba(168, 115, 56, 0.10);
-        font-size: 13px; color: #816649;
-      }
-      .charge-entry:last-child { border-bottom: none; }
-    </style>
-    ''')
 
     ui.query('body').style(
         'background: radial-gradient(120% 120% at 12% 12%,'
@@ -174,45 +143,52 @@ async def dashboard():
         'background: linear-gradient(135deg, #f48a3a 0%, #ee7f2f 50%, #cc611d 100%);'
         'box-shadow: 0 4px 16px rgba(81, 34, 7, 0.18);'
     ):
-        ui.label('Banana Dashboard').style('font-size: 20px; font-weight: 700;')
+        ui.label(t('bs.dashboard_title')).style('font-size: 20px; font-weight: 700;')
 
     # -- Dashboard content (live budget tracking) --------------------------------
 
-    with ui.element('div').classes('dashboard-content').style(
+    with ui.element('div').style(
         'padding: 24px; width: 100%;'
+        'max-width: calc((100vw - min(1220px, calc(100vw - 48px))) / 2 - 16px);'
+        'min-width: 280px;'
         'font-family: "Avenir Next", "Trebuchet MS", "Gill Sans", sans-serif;'
     ):
         # --- Budget Overview Card ---
-        with ui.element('div').classes('banana-card').style('margin-bottom: 16px;'):
-            ui.label('Session Budget').style(
+        with ui.element('div').style(f'{CARD_STYLE} margin-bottom: 16px;'):
+            ui.label(t('bs.session_budget')).style(
                 'font-size: 17px; font-weight: 700; margin-bottom: 4px; color: #5a3e1b;'
             )
             remaining_value = ui.label(f'${DEFAULT_BUDGET_USD:.2f}')
             remaining_value.style('font-size: 32px; font-weight: 700; color: #43a047;')
-            ui.label('remaining').style(
+            ui.label(t('bs.remaining')).style(
                 'font-size: 13px; color: #816649; margin-top: -4px;'
             )
 
-            with ui.element('div').classes('budget-progress-track'):
-                bar_fill = ui.element('div').classes('budget-progress-fill')
-                bar_fill.style('width: 0%; background-color: #43a047;')
+            with ui.element('div').style(PROGRESS_TRACK_STYLE):
+                bar_fill = ui.element('div').style(
+                    f'{PROGRESS_FILL_STYLE} width: 0%; background-color: #43a047;'
+                )
 
-            spent_label = ui.label(f'$0.0000 of ${DEFAULT_BUDGET_USD:.2f} used')
+            spent_label = ui.label(
+                t('bs.spent_of_budget', spent='$0.0000', budget=f'${DEFAULT_BUDGET_USD:.2f}')
+            )
             spent_label.style(
                 'font-size: 13px; color: #816649; margin-top: 8px;'
                 'font-variant-numeric: tabular-nums;'
             )
 
         # --- Spending Breakdown Card ---
-        with ui.element('div').classes('banana-card').style('margin-bottom: 16px;'):
-            ui.label('Breakdown').style(
+        with ui.element('div').style(f'{CARD_STYLE} margin-bottom: 16px;'):
+            ui.label(t('bs.breakdown')).style(
                 'font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #5a3e1b;'
             )
             cat_labels: dict[str, ui.label] = {}
-            for cat_key, (icon_cls, display_name) in CATEGORY_META.items():
-                with ui.element('div').classes('category-row'):
+            for cat_key, i18n_key in CATEGORY_I18N.items():
+                icon_cls = CATEGORY_ICONS[cat_key]
+                display_name = t(i18n_key)
+                with ui.element('div').style(CATEGORY_ROW_STYLE):
                     ui.html(
-                        f'<span><i class="{icon_cls} category-icon"></i>'
+                        f'<span><i class="{icon_cls}" style="margin-right: 8px; font-size: 16px;"></i>'
                         f'{display_name}</span>'
                     )
                     lbl = ui.label('$0.0000')
@@ -222,14 +198,14 @@ async def dashboard():
                     cat_labels[cat_key] = lbl
 
         # --- Recent Charges Card ---
-        with ui.element('div').classes('banana-card'):
-            ui.label('Recent Charges').style(
+        with ui.element('div').style(CARD_STYLE):
+            ui.label(t('bs.recent_charges')).style(
                 'font-size: 17px; font-weight: 700; margin-bottom: 8px; color: #5a3e1b;'
             )
             charges_container = ui.element('div').style(
                 'max-height: 200px; overflow-y: auto;'
             )
-            no_charges = ui.label('No charges yet').style(
+            no_charges = ui.label(t('bs.no_charges')).style(
                 'font-size: 13px; color: #a08a6e; font-style: italic;'
             )
 
@@ -254,9 +230,11 @@ async def dashboard():
                 f'font-size: 32px; font-weight: 700; color: {color};'
             )
             bar_fill.style(
-                f'width: {pct:.1f}%; background-color: {color};'
+                f'{PROGRESS_FILL_STYLE} width: {pct:.1f}%; background-color: {color};'
             )
-            spent_label.text = f'${spent:.4f} of ${budget:.2f} used'
+            spent_label.text = t(
+                'bs.spent_of_budget', spent=f'${spent:.4f}', budget=f'${budget:.2f}',
+            )
 
             by_cat = cost_tracker.totals_by_category()
             for cat_key, lbl in cat_labels.items():
@@ -268,30 +246,30 @@ async def dashboard():
                 no_charges.set_visibility(len(entries) == 0)
                 charges_container.clear()
                 for entry in reversed(entries[-10:]):
-                    meta = CATEGORY_META.get(
-                        entry.category, ('ph ph-receipt', entry.category),
+                    icon = CATEGORY_ICONS.get(entry.category, 'ph ph-receipt')
+                    i18n_key = CATEGORY_I18N.get(entry.category)
+                    cat_name = t(i18n_key) if i18n_key else entry.category
+                    label = t(
+                        'bs.charge_entry',
+                        category=cat_name,
+                        provider=entry.provider,
+                        cost=f'${entry.cost_usd:.4f}',
                     )
                     with charges_container:
                         ui.html(
-                            f'<div class="charge-entry">'
-                            f'<i class="{meta[0]}" style="margin-right:6px"></i>'
-                            f'{meta[1]} · {entry.provider} · '
-                            f'<strong>${entry.cost_usd:.4f}</strong>'
+                            f'<div style="{CHARGE_ENTRY_STYLE}">'
+                            f'<i class="{icon}" style="margin-right: 6px;"></i>'
+                            f'{label}'
                             f'</div>'
                         )
 
         ui.timer(1.5, update_budget)
 
-    # Embedded BananaStore widget — direct HTML, no iframe
-    ui.html(
-        f'<div class="store-panel">'
-        f'<div class="banana-store">{WIDGET_HTML}</div>'
-        f'</div>'
-    )
+    # -- Embedded BananaStore widget (self-contained custom component) ----------
 
-    # Load BananaStore JS (auto-inits on .banana-store container)
-    ui.add_body_html('<script src="/static/app.js"></script>')
+    with ui.element('div').style(STORE_PANEL_STYLE):
+        BananaStoreWidget(token=token, lang=BS_LANG, fallback=BS_FALLBACK)
 
 
-ui.run(port=8070, title='Banana Dashboard', show=False, reload=True,
+ui.run(port=8070, title=t('bs.dashboard_title'), show=False, reload=True,
        uvicorn_reload_includes='*.js,*.css')
