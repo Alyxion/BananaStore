@@ -136,6 +136,19 @@ class TestGenerateSvg:
         assert "Reference SVG 1" in text_block["text"]
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("quality", ["low", "medium", "high"])
+    async def test_quality_levels(self, quality):
+        client, _ = _mock_post(200, _chat_response(SAMPLE_SVG))
+        with patch("app.llm.openai.httpx.AsyncClient", return_value=client), \
+             patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test"}):
+            result = await llm_openai.generate_svg("a star", "1024x1024", quality, "1:1", [])
+        assert result.startswith("data:image/svg+xml;base64,")
+        call_json = client.post.call_args[1]["json"]
+        system_content = call_json["messages"][0]["content"]
+        from app.svg import SVG_QUALITY_HINTS
+        assert SVG_QUALITY_HINTS[quality][:30] in system_content
+
+    @pytest.mark.asyncio
     async def test_no_svg_in_response_raises(self):
         client, _ = _mock_post(200, _chat_response("I can't do that"))
         with patch("app.llm.openai.httpx.AsyncClient", return_value=client), \

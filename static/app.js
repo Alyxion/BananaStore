@@ -428,8 +428,10 @@ function init(root) {
     return (result.description || '').trim();
   };
 
+  const _OPENAI_LOGO = '<svg class="provider-logo" viewBox="0 0 24 24" fill="currentColor"><path d="M22.28 9.37a6.3 6.3 0 0 0-.54-5.2 6.37 6.37 0 0 0-6.86-3.1A6.3 6.3 0 0 0 10.13 0a6.37 6.37 0 0 0-6.07 4.42 6.3 6.3 0 0 0-4.23 3.07 6.37 6.37 0 0 0 .79 7.47 6.3 6.3 0 0 0 .54 5.2 6.37 6.37 0 0 0 6.86 3.1A6.3 6.3 0 0 0 12.77 24a6.37 6.37 0 0 0 6.07-4.42 6.3 6.3 0 0 0 4.23-3.07 6.37 6.37 0 0 0-.79-7.14zM12.77 22.66a4.75 4.75 0 0 1-3.05-1.1l.15-.09 5.07-2.93a.82.82 0 0 0 .42-.72v-7.15l2.14 1.24a.08.08 0 0 1 .04.06v5.92a4.77 4.77 0 0 1-4.77 4.77zM3.67 18.5a4.74 4.74 0 0 1-.57-3.2l.15.09 5.07 2.93a.83.83 0 0 0 .83 0l6.19-3.57v2.47a.07.07 0 0 1-.03.06l-5.12 2.96a4.77 4.77 0 0 1-6.52-1.74zM2.34 7.9A4.74 4.74 0 0 1 4.82 5.8v6.03a.82.82 0 0 0 .41.71l6.19 3.57-2.14 1.24a.08.08 0 0 1-.07 0L4.09 14.4A4.77 4.77 0 0 1 2.34 7.9zm17.13 3.98-6.19-3.57 2.14-1.24a.08.08 0 0 1 .07 0l5.12 2.96a4.77 4.77 0 0 1-.74 8.6v-6.03a.83.83 0 0 0-.4-.72zm2.13-3.2-.15-.1-5.07-2.93a.83.83 0 0 0-.83 0l-6.19 3.58V6.75a.07.07 0 0 1 .03-.06l5.12-2.96a4.77 4.77 0 0 1 7.09 4.95zM9.47 13.37l-2.14-1.24a.08.08 0 0 1-.04-.06V6.15a4.77 4.77 0 0 1 7.82-3.67l-.15.09-5.07 2.93a.82.82 0 0 0-.42.72zm1.16-2.5L12.77 9.8l2.13 1.24v2.47l-2.13 1.24-2.14-1.24z"/></svg>';
   const PROVIDER_LOGOS = {
-    openai: '<svg class="provider-logo" viewBox="0 0 24 24" fill="currentColor"><path d="M22.28 9.37a6.3 6.3 0 0 0-.54-5.2 6.37 6.37 0 0 0-6.86-3.1A6.3 6.3 0 0 0 10.13 0a6.37 6.37 0 0 0-6.07 4.42 6.3 6.3 0 0 0-4.23 3.07 6.37 6.37 0 0 0 .79 7.47 6.3 6.3 0 0 0 .54 5.2 6.37 6.37 0 0 0 6.86 3.1A6.3 6.3 0 0 0 12.77 24a6.37 6.37 0 0 0 6.07-4.42 6.3 6.3 0 0 0 4.23-3.07 6.37 6.37 0 0 0-.79-7.14zM12.77 22.66a4.75 4.75 0 0 1-3.05-1.1l.15-.09 5.07-2.93a.82.82 0 0 0 .42-.72v-7.15l2.14 1.24a.08.08 0 0 1 .04.06v5.92a4.77 4.77 0 0 1-4.77 4.77zM3.67 18.5a4.74 4.74 0 0 1-.57-3.2l.15.09 5.07 2.93a.83.83 0 0 0 .83 0l6.19-3.57v2.47a.07.07 0 0 1-.03.06l-5.12 2.96a4.77 4.77 0 0 1-6.52-1.74zM2.34 7.9A4.74 4.74 0 0 1 4.82 5.8v6.03a.82.82 0 0 0 .41.71l6.19 3.57-2.14 1.24a.08.08 0 0 1-.07 0L4.09 14.4A4.77 4.77 0 0 1 2.34 7.9zm17.13 3.98-6.19-3.57 2.14-1.24a.08.08 0 0 1 .07 0l5.12 2.96a4.77 4.77 0 0 1-.74 8.6v-6.03a.83.83 0 0 0-.4-.72zm2.13-3.2-.15-.1-5.07-2.93a.83.83 0 0 0-.83 0l-6.19 3.58V6.75a.07.07 0 0 1 .03-.06l5.12-2.96a4.77 4.77 0 0 1 7.09 4.95zM9.47 13.37l-2.14-1.24a.08.08 0 0 1-.04-.06V6.15a4.77 4.77 0 0 1 7.82-3.67l-.15.09-5.07 2.93a.82.82 0 0 0-.42.72zm1.16-2.5L12.77 9.8l2.13 1.24v2.47l-2.13 1.24-2.14-1.24z"/></svg>',
+    openai: _OPENAI_LOGO,
+    azure_openai: _OPENAI_LOGO,
     google: '<svg class="provider-logo" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>',
     anthropic: '<svg class="provider-logo" viewBox="0 0 24 24" fill="currentColor"><path d="M17.304 3.541h-3.672l6.696 16.918H24Zm-10.608 0L0 20.459h3.744l1.37-3.553h7.005l1.369 3.553h3.744L10.536 3.541Zm-.371 10.223L8.616 7.82l2.291 5.945Z"/></svg>',
   };
@@ -1528,7 +1530,33 @@ function init(root) {
     startOpenAiRecording();
   });
   voiceCancelButton.addEventListener('click', closeOpenAiVoicePopup);
-  voiceSendButton.addEventListener('click', sendNowOpenAiRecording);
+  voiceSendButton.addEventListener('click', (event) => {
+    // Hidden combo: Alt+Shift+click → download recording as file for testing
+    if (event.altKey && event.shiftKey) {
+      if (openAiRecorder && openAiRecorder.state !== 'inactive') {
+        openAiRecorder.requestData();
+        openAiRecorder.stop();
+      }
+      setTimeout(() => {
+        if (!openAiBlob || !openAiBlob.size) {
+          voicePopupNote.textContent = 'No audio to download.';
+          return;
+        }
+        const ext = openAiBlob.type.includes('webm') ? 'webm' : 'ogg';
+        const url = URL.createObjectURL(openAiBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `voice-test.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        voicePopupNote.textContent = 'Recording downloaded.';
+      }, 300);
+      return;
+    }
+    sendNowOpenAiRecording();
+  });
 
   cancelButton.addEventListener('click', () => {
     if (generationAbortController) {
@@ -1666,13 +1694,13 @@ function init(root) {
     providerGroup.innerHTML = '';
     let first = true;
     Object.entries(providers).forEach(([id, provider]) => {
+      if (!provider.hasKey) return;
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `provider-btn${first ? ' active' : ''}`;
       btn.dataset.provider = id;
       const logo = PROVIDER_LOGOS[id] || '<i class="ph ph-robot"></i>';
-      const keyHint = provider.hasKey ? '' : ' <span class="no-key">(no key)</span>';
-      btn.innerHTML = `${logo}<span>${provider.label}${keyHint}</span>`;
+      btn.innerHTML = `${logo}<span>${provider.label}</span>`;
       btn.addEventListener('click', () => {
         providerGroup.querySelectorAll('.provider-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');

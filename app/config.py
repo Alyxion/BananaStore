@@ -19,6 +19,12 @@ class Settings:
     OPENAI_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
+    AZURE_OPENAI_API_KEY: Optional[str] = None
+    AZURE_OPENAI_ENDPOINT: Optional[str] = None
+    AZURE_OPENAI_API_VERSION: Optional[str] = None
+    AZURE_OPENAI_DEPLOYMENT_IMAGE: Optional[str] = None
+    AZURE_OPENAI_DEPLOYMENT_TTS: Optional[str] = None
+    AZURE_OPENAI_DEPLOYMENT_STT: Optional[str] = None
     COST_LIMIT_USD: Optional[float] = None
 
     def get(self, name: str) -> Optional[str]:

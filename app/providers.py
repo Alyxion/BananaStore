@@ -1,6 +1,14 @@
 from typing import Any
 
 PROVIDER_CAPABILITIES: dict[str, dict[str, Any]] = {
+    "azure_openai": {
+        "label": "OpenAI",
+        "qualities": ["auto", "low", "medium", "high"],
+        "ratios": ["1:1", "3:2", "2:3"],
+        "ratioSizes": {"1:1": "1024x1024", "3:2": "1536x1024", "2:3": "1024x1536"},
+        "formats": ["Photo"],
+        "requiresKey": "AZURE_OPENAI_API_KEY",
+    },
     "openai": {
         "label": "OpenAI",
         "qualities": ["auto", "low", "medium", "high"],

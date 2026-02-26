@@ -2,6 +2,7 @@
 
 import base64
 import os
+from pathlib import Path
 
 import pytest
 from starlette.testclient import TestClient
@@ -12,6 +13,7 @@ from tests.conftest import ws_connect
 
 client = TestClient(app)
 
+FIXTURES = Path(__file__).parent / "fixtures"
 HAVE_OPENAI = bool(os.getenv("OPENAI_API_KEY"))
 HAVE_GOOGLE = bool(os.getenv("GOOGLE_API_KEY"))
 HAVE_ANTHROPIC = bool(os.getenv("ANTHROPIC_API_KEY"))
@@ -83,6 +85,41 @@ class TestOpenaiIntegration:
             assert resp["ok"] is True
             costs = _ws_send(ws, "costs")
             assert costs["result"]["total_usd"] > 0
+
+
+    def test_transcribe_german_voice_fixture(self):
+        audio_path = FIXTURES / "voice-test-german.webm"
+        if not audio_path.exists():
+            pytest.skip("voice-test-german.webm fixture not found")
+        audio_b64 = base64.b64encode(audio_path.read_bytes()).decode()
+        with ws_connect(client) as ws:
+            resp = _ws_send(ws, "transcribe", {
+                "audio_b64": audio_b64,
+                "filename": "voice-test-german.webm",
+                "content_type": "audio/webm",
+            }, timeout=30)
+        assert resp["ok"] is True
+        text = resp["result"]["text"].lower()
+        assert "geil" in text or "scheiß" in text or "scheiss" in text
+
+    def test_tts_then_stt_roundtrip(self):
+        """Text → Speech → Text: the transcript should resemble the original."""
+        original = "Das ist ein einfacher Test für die Sprachsynthese."
+        with ws_connect(client) as ws:
+            tts_resp = _ws_send(ws, "tts", {"text": original, "language": "de"}, timeout=30)
+            assert tts_resp["ok"] is True
+            audio_b64 = tts_resp["result"]["audio_b64"]
+
+            stt_resp = _ws_send(ws, "transcribe", {
+                "audio_b64": audio_b64,
+                "filename": "roundtrip.mp3",
+                "content_type": "audio/mpeg",
+            }, timeout=30)
+            assert stt_resp["ok"] is True
+            transcript = stt_resp["result"]["text"].lower()
+            # Key words should survive the round-trip
+            assert "test" in transcript
+            assert "sprachsynthese" in transcript or "sprach" in transcript
 
 
 @pytest.mark.skipif(not HAVE_GOOGLE, reason="GOOGLE_API_KEY not set")

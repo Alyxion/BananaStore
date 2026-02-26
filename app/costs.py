@@ -48,7 +48,7 @@ CHAT_TOKEN_PRICING: dict[str, tuple[float, float]] = {
 
 # Audio pricing
 OPENAI_TRANSCRIPTION_PER_MINUTE = 0.003  # gpt-4o-mini-transcribe
-OPENAI_TTS_PER_CHAR = 0.030 / 1000  # tts-1-hd per character
+OPENAI_TTS_PER_CHAR = 0.015 / 1000  # gpt-4o-mini-tts per character
 
 # Google flat image cost
 GOOGLE_IMAGE_COST = 0.04
@@ -202,10 +202,26 @@ def record_openai_tts(char_count: int) -> CostEntry:
     entry = CostEntry(
         category="voice_output",
         provider="openai",
-        model="tts-1-hd",
+        model="gpt-4o-mini-tts",
         function="synthesize_speech",
         cost_usd=cost,
         detail={"char_count": char_count},
+    )
+    tracker.record(entry)
+    return entry
+
+
+def record_azure_image(quality: str, size: str, function: str = "generate_image") -> CostEntry:
+    effective_quality = quality if quality != "auto" else "medium"
+    key = (effective_quality, size if size == "1024x1024" else "other")
+    cost = OPENAI_IMAGE_PRICING.get(key, OPENAI_IMAGE_PRICING[("medium", "other")])
+    entry = CostEntry(
+        category="image_generation",
+        provider="azure_openai",
+        model="gpt-image-1",
+        function=function,
+        cost_usd=cost,
+        detail={"quality": quality, "effective_quality": effective_quality, "size": size},
     )
     tracker.record(entry)
     return entry

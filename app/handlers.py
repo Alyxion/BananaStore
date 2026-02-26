@@ -9,15 +9,26 @@ from fastapi import HTTPException
 from app.config import settings
 from app.costs import CostTracker
 from app.llm import anthropic as llm_anthropic
+from app.llm import azure_openai as llm_azure
 from app.llm import google as llm_google
 from app.llm import openai as llm_openai
 from app.providers import PROVIDER_CAPABILITIES
 from app.util import fallback_filename
 
 
+def _azure_available() -> bool:
+    return bool(settings.get("AZURE_OPENAI_API_KEY"))
+
+
 async def handle_providers() -> dict[str, Any]:
+    azure_active = _azure_available()
     providers = {}
     for provider_id, details in PROVIDER_CAPABILITIES.items():
+        # When Azure is configured, hide the direct OpenAI provider
+        if provider_id == "openai" and azure_active:
+            continue
+        if provider_id == "azure_openai" and not azure_active:
+            continue
         key_name = details["requiresKey"]
         providers[provider_id] = {
             **details,
@@ -40,7 +51,8 @@ async def handle_transcribe(audio_bytes: bytes, filename: str, content_type: str
         raise HTTPException(status_code=400, detail="No audio payload provided.")
     if len(audio_bytes) > 8 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Audio file is too large. Keep it under 8MB.")
-    text = await llm_openai.transcribe_audio(
+    transcribe = llm_azure.transcribe_audio if _azure_available() else llm_openai.transcribe_audio
+    text = await transcribe(
         content=audio_bytes,
         filename=filename,
         content_type=content_type,
@@ -64,7 +76,8 @@ async def handle_tts(text: str, language: str) -> bytes:
     text = text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="text is required.")
-    return await llm_openai.synthesize_speech(text=text, language=language.strip())
+    synthesize = llm_azure.synthesize_speech if _azure_available() else llm_openai.synthesize_speech
+    return await synthesize(text=text, language=language.strip())
 
 
 async def handle_generate(
@@ -134,6 +147,11 @@ async def handle_generate(
     elif provider == "google":
         image_data_url = await llm_google.generate_image(
             description=description, size=size, quality=quality, ratio=ratio,
+            reference_images=parsed_reference_images, svg_sources=svg_sources,
+        )
+    elif provider == "azure_openai":
+        image_data_url = await llm_azure.generate_image(
+            description=description, size=size, quality=quality,
             reference_images=parsed_reference_images, svg_sources=svg_sources,
         )
     else:

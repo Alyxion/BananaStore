@@ -279,7 +279,7 @@ class OpenAIProvider(LLMProvider):
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "tts-1-hd",
+                    "model": "gpt-4o-mini-tts",
                     "voice": "nova",
                     "input": text,
                     "response_format": "mp3",

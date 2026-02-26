@@ -12,6 +12,7 @@ from app.costs import (
     CostTracker,
     SpendingLimitExceeded,
     record_anthropic_chat,
+    record_azure_image,
     record_google_image,
     record_openai_chat,
     record_openai_image,
@@ -241,7 +242,7 @@ class TestRecordOpenaiTts:
         expected = 1000 * OPENAI_TTS_PER_CHAR
         assert abs(entry.cost_usd - expected) < 1e-12
         assert entry.category == "voice_output"
-        assert entry.model == "tts-1-hd"
+        assert entry.model == "gpt-4o-mini-tts"
 
     def test_short_text(self):
         entry = record_openai_tts(5)
@@ -254,6 +255,32 @@ class TestRecordOpenaiTts:
 
 
 # --- record_google_image ---
+
+
+class TestRecordAzureImage:
+    def test_low_1024x1024(self):
+        entry = record_azure_image("low", "1024x1024")
+        assert entry.cost_usd == 0.011
+        assert entry.category == "image_generation"
+        assert entry.provider == "azure_openai"
+        assert entry.model == "gpt-image-1"
+
+    def test_medium_other(self):
+        entry = record_azure_image("medium", "1536x1024")
+        assert entry.cost_usd == 0.063
+
+    def test_high_1024x1024(self):
+        entry = record_azure_image("high", "1024x1024")
+        assert entry.cost_usd == 0.167
+
+    def test_auto_maps_to_medium(self):
+        entry = record_azure_image("auto", "1024x1024")
+        assert entry.cost_usd == 0.042
+        assert entry.detail["effective_quality"] == "medium"
+
+    def test_adds_to_tracker(self):
+        record_azure_image("low", "1024x1024")
+        assert tracker.total_usd == 0.011
 
 
 class TestRecordGoogleImage:
