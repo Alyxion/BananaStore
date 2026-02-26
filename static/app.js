@@ -66,6 +66,8 @@ function init(root) {
 
   const formatGroup = root.querySelector('#formatGroup');
   const formatPills = root.querySelector('#formatPills');
+  const modelGroup = root.querySelector('#modelGroup');
+  const modelPills = root.querySelector('#modelPills');
   const downloadFormatPopup = root.querySelector('#downloadFormatPopup');
   const downloadFormatCloseButton = root.querySelector('#downloadFormatCloseButton');
   const downloadSvgButton = root.querySelector('#downloadSvgButton');
@@ -516,6 +518,14 @@ function init(root) {
     const formats = provider.formats || ['Photo'];
     renderPills(formatPills, formats);
     formatGroup.hidden = formats.length <= 1;
+    const models = provider.models || [];
+    if (models.length > 1) {
+      renderPills(modelPills, models, 0, provider.modelLabels);
+      modelGroup.hidden = false;
+    } else {
+      modelPills.innerHTML = '';
+      modelGroup.hidden = true;
+    }
     updateQualityForFormat();
   };
 
@@ -958,6 +968,7 @@ function init(root) {
           quality: getActivePill(qualityPills),
           ratio: getActivePill(ratioPills),
           format: activeFormat,
+          model: getActivePill(modelPills),
           reference_images: wsRefs,
         }, GENERATION_TIMEOUT_MS);
       } catch (error) {
@@ -1199,6 +1210,20 @@ function init(root) {
       });
     }
     cameraInput.value = '';
+  });
+
+  // --- Clipboard paste: add images from clipboard as references ---
+  document.addEventListener('paste', (e) => {
+    const items = Array.from(e.clipboardData?.items || []);
+    const imageFiles = items
+      .filter((item) => item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+    if (imageFiles.length) {
+      e.preventDefault();
+      addReferenceFiles(imageFiles, true);
+      setStatus(t('bs.status_pasted', { count: String(imageFiles.length) }));
+    }
   });
 
   const formatVoiceTime = (seconds) => {

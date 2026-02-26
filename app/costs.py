@@ -50,8 +50,9 @@ CHAT_TOKEN_PRICING: dict[str, tuple[float, float]] = {
 OPENAI_TRANSCRIPTION_PER_MINUTE = 0.003  # gpt-4o-mini-transcribe
 OPENAI_TTS_PER_CHAR = 0.015 / 1000  # gpt-4o-mini-tts per character
 
-# Google flat image cost
-GOOGLE_IMAGE_COST = 0.04
+# Google flat image costs
+GOOGLE_IMAGE_COST = 0.04        # gemini-3-pro-image-preview
+GOOGLE_FLASH_IMAGE_COST = 0.04  # gemini-3.1-flash-image-preview
 
 
 class CostTracker:
@@ -234,6 +235,19 @@ def record_google_image() -> CostEntry:
         model="gemini-3-pro-image-preview",
         function="generate_image",
         cost_usd=GOOGLE_IMAGE_COST,
+        detail={},
+    )
+    tracker.record(entry)
+    return entry
+
+
+def record_google_flash_image() -> CostEntry:
+    entry = CostEntry(
+        category="image_generation",
+        provider="google",
+        model="gemini-3.1-flash-image-preview",
+        function="generate_image",
+        cost_usd=GOOGLE_FLASH_IMAGE_COST,
         detail={},
     )
     tracker.record(entry)

@@ -123,6 +123,7 @@ async def _dispatch(session, action: str, payload: dict) -> dict | list | bytes:
             quality=payload.get("quality", ""),
             ratio=payload.get("ratio", ""),
             format=payload.get("format", "Photo"),
+            model=payload.get("model", ""),
             reference_images=payload.get("reference_images", []),
             tracker=tracker,
         )

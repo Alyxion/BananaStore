@@ -4,13 +4,16 @@ from typing import Any
 import httpx
 from fastapi import HTTPException
 
-from app.costs import record_google_image, tracker
+from app.costs import record_google_flash_image, record_google_image, tracker
 from app.llm.base import LLMProvider
 
 
 class GoogleProvider(LLMProvider):
     provider_name = "Google"
     api_key_env = "GOOGLE_API_KEY"
+
+    def __init__(self, model: str = "gemini-3.1-flash-image-preview"):
+        self.model = model
 
     def auth_headers(self, api_key: str) -> dict[str, str]:
         return {}
@@ -52,7 +55,7 @@ class GoogleProvider(LLMProvider):
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
+                f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
                 params=self.auth_params(api_key),
                 headers={"Content-Type": "application/json"},
                 json={
@@ -73,14 +76,19 @@ class GoogleProvider(LLMProvider):
                 inline_data = part.get("inline_data") or part.get("inlineData")
                 if inline_data and inline_data.get("data"):
                     mime = inline_data.get("mime_type") or inline_data.get("mimeType") or "image/png"
-                    record_google_image()
+                    if self.model == "gemini-3-pro-image-preview":
+                        record_google_image()
+                    else:
+                        record_google_flash_image()
                     return self.to_data_url(inline_data["data"], mime)
 
         raise HTTPException(status_code=502, detail=f"Google returned no image payload: {payload}")
 
 
-# Module-level singleton
-_provider = GoogleProvider()
+# Module-level singletons
+_provider = GoogleProvider(model="gemini-3.1-flash-image-preview")
+_provider_pro = GoogleProvider(model="gemini-3-pro-image-preview")
 
-# Backward-compatible shim
+# Module-level shims
 async def generate_image(*a, **kw): return await _provider.generate_image(*a, **kw)
+async def generate_image_pro(*a, **kw): return await _provider_pro.generate_image(*a, **kw)

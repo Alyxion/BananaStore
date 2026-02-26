@@ -4,6 +4,7 @@ import pytest
 
 from app.costs import (
     CHAT_TOKEN_PRICING,
+    GOOGLE_FLASH_IMAGE_COST,
     GOOGLE_IMAGE_COST,
     OPENAI_IMAGE_PRICING,
     OPENAI_TRANSCRIPTION_PER_MINUTE,
@@ -13,6 +14,7 @@ from app.costs import (
     SpendingLimitExceeded,
     record_anthropic_chat,
     record_azure_image,
+    record_google_flash_image,
     record_google_image,
     record_openai_chat,
     record_openai_image,
@@ -290,6 +292,15 @@ class TestRecordGoogleImage:
         assert entry.category == "image_generation"
         assert entry.provider == "google"
         assert entry.model == "gemini-3-pro-image-preview"
+
+
+class TestRecordGoogleFlashImage:
+    def test_flat_cost(self):
+        entry = record_google_flash_image()
+        assert entry.cost_usd == GOOGLE_FLASH_IMAGE_COST
+        assert entry.category == "image_generation"
+        assert entry.provider == "google"
+        assert entry.model == "gemini-3.1-flash-image-preview"
 
 
 # --- record_anthropic_chat ---

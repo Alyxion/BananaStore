@@ -1233,22 +1233,27 @@
 
 .banana-store .option-row-inline {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
 .banana-store .option-row-inline > .option-group {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .banana-store .option-row-inline > .option-group:first-child {
-  flex: 2;
+  flex: 2 1 auto;
 }
 
 .banana-store .option-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.banana-store .option-group[hidden] {
+  display: none;
 }
 
 .banana-store .option-pills {

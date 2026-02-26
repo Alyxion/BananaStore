@@ -283,6 +283,22 @@ class TestGenerate:
         assert resp["ok"] is True
         assert resp["result"]["provider"] == "google"
 
+    def test_google_pro_model_success(self):
+        data_url = f"data:image/png;base64,{SAMPLE_PNG_B64}"
+        with patch("app.handlers.llm_google.generate_image_pro", new_callable=AsyncMock, return_value=data_url):
+            with ws_connect(client) as ws:
+                resp = _ws_send(ws, "generate", {
+                    "provider": "google",
+                    "description": "a mountain",
+                    "quality": "standard",
+                    "ratio": "1:1",
+                    "format": "Photo",
+                    "model": "pro",
+                    "reference_images": [],
+                })
+        assert resp["ok"] is True
+        assert resp["result"]["provider"] == "google"
+
     def test_anthropic_vector_success(self):
         data_url = f"data:image/svg+xml;base64,{SAMPLE_SVG_B64}"
         with patch("app.handlers.llm_anthropic.generate_svg", new_callable=AsyncMock, return_value=data_url):

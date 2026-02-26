@@ -113,3 +113,23 @@ class TestGenerateImage:
              patch.dict("os.environ", {"GOOGLE_API_KEY": "gk-test"}):
             result = await llm_google.generate_image("a dog", "1024x1024", "standard", "1:1", [])
         assert result.startswith("data:image/jpeg;base64,")
+
+    @pytest.mark.asyncio
+    async def test_default_uses_flash_model(self):
+        """Default generate_image uses the Flash model URL."""
+        client, _ = _mock_post(200, _google_image_response())
+        with patch("app.llm.google.httpx.AsyncClient", return_value=client), \
+             patch.dict("os.environ", {"GOOGLE_API_KEY": "gk-test"}):
+            await llm_google.generate_image("a dog", "1024x1024", "standard", "1:1", [])
+        url = client.post.call_args[0][0]
+        assert "gemini-3.1-flash-image-preview" in url
+
+    @pytest.mark.asyncio
+    async def test_pro_uses_pro_model(self):
+        """generate_image_pro uses the Pro model URL."""
+        client, _ = _mock_post(200, _google_image_response())
+        with patch("app.llm.google.httpx.AsyncClient", return_value=client), \
+             patch.dict("os.environ", {"GOOGLE_API_KEY": "gk-test"}):
+            await llm_google.generate_image_pro("a dog", "1024x1024", "standard", "1:1", [])
+        url = client.post.call_args[0][0]
+        assert "gemini-3-pro-image-preview" in url

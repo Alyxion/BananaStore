@@ -24,6 +24,8 @@ PROVIDER_CAPABILITIES: dict[str, dict[str, Any]] = {
         "ratios": ["1:1", "16:9", "9:16"],
         "ratioSizes": {"1:1": "1024x1024", "16:9": "1280x720", "9:16": "720x1280"},
         "formats": ["Photo"],
+        "models": ["flash", "pro"],
+        "modelLabels": {"flash": "Flash", "pro": "Pro"},
         "requiresKey": "GOOGLE_API_KEY",
     },
     "anthropic": {

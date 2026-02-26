@@ -86,6 +86,7 @@ async def handle_generate(
     quality: str,
     ratio: str,
     format: str,
+    model: str,
     reference_images: list[dict[str, Any]],
     tracker: CostTracker,
 ) -> dict:
@@ -145,7 +146,8 @@ async def handle_generate(
             reference_images=parsed_reference_images, svg_sources=svg_sources,
         )
     elif provider == "google":
-        image_data_url = await llm_google.generate_image(
+        generate_fn = llm_google.generate_image_pro if model == "pro" else llm_google.generate_image
+        image_data_url = await generate_fn(
             description=description, size=size, quality=quality, ratio=ratio,
             reference_images=parsed_reference_images, svg_sources=svg_sources,
         )
